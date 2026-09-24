@@ -1,0 +1,11 @@
+.fixpro { background: radial-gradient(circle at 79% 28%, #f2c76e, transparent 24%), linear-gradient(135deg, #173c53, #1d6580); }
+.fixpro-mark { position: absolute; right: 22px; top: 43px; color: #ffe5a7; font-size: 3.4rem; line-height: 1; }
+.fixpro-copy { position: absolute; left: 22px; bottom: 42px; margin: 0; color: #e8faff; font-size: .88rem; font-weight: 700; line-height: 1.3; letter-spacing: .04em; }
+.fixpro-copy strong { color: #ffcf6d; font-size: .56rem; letter-spacing: .14em; }
+.fixpro-tools { position: absolute; left: 22px; bottom: 15px; display: flex; gap: 7px; }
+.fixpro-tools i { width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; background: #d8f2f5; color: #276579; font-size: .55rem; font-style: normal; }
+.github-link { display: inline-flex; text-decoration: none; }
+
+@media (min-width: 761px) {
+  .project-card:nth-child(4), .project-card:nth-child(5), .project-card:nth-child(6) { grid-column: span 2; }
+}
