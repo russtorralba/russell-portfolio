@@ -152,19 +152,29 @@ function Preview({ kind, title }) {
     carepoint: (
       <>
         <span className="preview-label">CAREPOINT</span>
-        <div className="carepoint-window">
-          <i>✦</i>
-          <b>
-            Care for every
-            <br />
-            <em>chapter.</em>
-          </b>
-          <span>OPEN TODAY</span>
-        </div>
-        <div className="carepoint-tiles">
-          <i />
-          <i />
-          <i />
+        <div className="carepoint-browser">
+          <div className="carepoint-browser-bar">
+            <span className="browser-dots">
+              <i />
+              <i />
+              <i />
+            </span>
+            <b>✦ CarePoint</b>
+            <small>Services&nbsp;&nbsp;Team</small>
+          </div>
+          <div className="carepoint-mini-hero">
+            <p>
+              Care for every
+              <br />
+              <em>chapter of your life.</em>
+            </p>
+            <span>OPEN TODAY</span>
+          </div>
+          <div className="carepoint-mini-content">
+            <i />
+            <i />
+            <i />
+          </div>
         </div>
       </>
     ),

@@ -60,67 +60,113 @@
 
 .carepoint {
   background:
-    radial-gradient(circle at 81% 22%, #f2b295, transparent 25%),
-    linear-gradient(135deg, #e9f0e7, #c9ddd2);
+    radial-gradient(circle at 83% 20%, #f2b295, transparent 22%),
+    linear-gradient(135deg, #edf1e8, #cbded4);
 }
 .carepoint .preview-label {
   color: #315e57;
 }
-.carepoint-window {
+.carepoint-browser {
   position: absolute;
-  right: 20px;
-  bottom: 22px;
-  left: 20px;
-  min-height: 96px;
-  padding: 14px 15px;
+  top: 39px;
+  right: 18px;
+  bottom: 18px;
+  left: 18px;
+  overflow: hidden;
+  border: 1px solid #b9cdc2;
+  background: #fff9ee;
+  box-shadow: 0 9px 20px #2150472b;
+}
+.carepoint-browser-bar {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+  background: #f6efe2;
+  color: #2b625b;
+  font:
+    700 0.38rem "DM Sans",
+    sans-serif;
+}
+.browser-dots {
+  display: flex;
+  gap: 3px;
+}
+.browser-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ee8064;
+}
+.browser-dots i:nth-child(2) {
+  background: #e8b76f;
+}
+.browser-dots i:nth-child(3) {
+  background: #76a08f;
+}
+.carepoint-browser-bar small {
+  margin-left: auto;
+  color: #6e887f;
+  font:
+    500 0.34rem "DM Sans",
+    sans-serif;
+}
+.carepoint-mini-hero {
+  position: relative;
+  min-height: 65px;
+  padding: 10px 11px;
   background: #27645e;
   color: #fff9ee;
-  box-shadow: 0 9px 20px #21504733;
 }
-.carepoint-window > i {
+.carepoint-mini-hero::after {
   position: absolute;
-  top: 14px;
-  right: 15px;
-  color: #ffc6ad;
-  font-size: 1rem;
-  font-style: normal;
+  right: -7px;
+  bottom: -19px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #e9ae80;
+  content: "";
 }
-.carepoint-window b {
-  display: block;
+.carepoint-mini-hero p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
   font:
-    500 1.35rem/0.9 Georgia,
+    500 0.77rem/0.93 Georgia,
     serif;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
 }
-.carepoint-window em {
+.carepoint-mini-hero em {
   color: #ffd0b8;
 }
-.carepoint-window span {
-  display: inline-block;
-  margin-top: 12px;
-  padding: 4px 6px;
-  background: #fff8ed;
-  color: #2d665f;
-  font: 700 0.46rem monospace;
-  letter-spacing: 0.09em;
-}
-.carepoint-tiles {
+.carepoint-mini-hero span {
   position: absolute;
-  top: 41px;
-  right: 23px;
+  z-index: 1;
+  right: 9px;
+  bottom: 8px;
+  padding: 3px 4px;
+  background: #fff9ee;
+  color: #2d665f;
+  font: 700 0.32rem monospace;
+  letter-spacing: 0.06em;
+}
+.carepoint-mini-content {
   display: flex;
   gap: 5px;
+  padding: 8px 11px;
 }
-.carepoint-tiles i {
-  width: 15px;
+.carepoint-mini-content i {
+  display: block;
+  flex: 1;
   height: 15px;
-  border-radius: 50%;
-  background: #ec8569;
-  box-shadow: 0 0 0 4px #f6d9c844;
+  border-radius: 2px;
+  background: #d9e6dc;
 }
-.carepoint-tiles i:nth-child(2) {
-  background: #6f9b89;
+.carepoint-mini-content i:nth-child(2) {
+  background: #f1c1aa;
 }
-.carepoint-tiles i:nth-child(3) {
-  background: #f1bd7d;
+.carepoint-mini-content i:nth-child(3) {
+  background: #b7d1c3;
 }
