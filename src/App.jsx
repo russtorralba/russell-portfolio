@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import "./App.css";
 import "./fixpro.css";
 import "./hero-animation.css";
@@ -191,6 +192,51 @@ function Preview({ kind, title }) {
 }
 
 function App() {
+  const projectTrackRef = useRef(null);
+  const [canScrollPrevious, setCanScrollPrevious] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(true);
+
+  const updateProjectNavigation = () => {
+    const track = projectTrackRef.current;
+    if (!track) return;
+    const atStart = track.scrollLeft <= 4;
+    const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    setCanScrollPrevious(!atStart);
+    setCanScrollNext(!atEnd);
+  };
+
+  const moveProjects = (direction) => {
+    const track = projectTrackRef.current;
+    if (!track) return;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    track.scrollBy({
+      left: direction * Math.max(track.clientWidth * 0.82, 260),
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+  };
+
+  const handleProjectTrackKeyDown = (event) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      moveProjects(-1);
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      moveProjects(1);
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      projectTrackRef.current?.scrollTo({ left: 0, behavior: "smooth" });
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      const track = projectTrackRef.current;
+      track?.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
+    }
+  };
+
   return (
     <main>
       <header className="site-header">
@@ -257,41 +303,77 @@ function App() {
               <em>purpose.</em>
             </h2>
           </div>
-          <p>
-            Seven small, thoughtful projects — each made to solve a real need or
-            invite a little curiosity.
-          </p>
+          <div className="projects-heading-actions">
+            <p>
+              Seven small, thoughtful projects — each made to solve a real need
+              or invite a little curiosity.
+            </p>
+            <div
+              className="project-track-controls"
+              aria-label="Project navigation"
+            >
+              <button
+                type="button"
+                onClick={() => moveProjects(-1)}
+                disabled={!canScrollPrevious}
+                aria-label="Previous projects"
+                aria-controls="project-track"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={() => moveProjects(1)}
+                disabled={!canScrollNext}
+                aria-label="Next projects"
+                aria-controls="project-track"
+              >
+                →
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="project-grid">
-          {projects.map(
-            ([title, type, description, preview, liveDemo], index) => (
-              <article className="project-card" key={title}>
-                <Preview kind={preview} title={title} />
-                <div className="project-body">
-                  <p className="project-number">0{index + 1}</p>
-                  <h3>{title}</h3>
-                  <p className="project-type">{type}</p>
-                  <p className="project-description">{description}</p>
-                  <div className="card-actions">
-                    {liveDemo ? (
-                      <a
-                        className="button small primary"
-                        href={liveDemo}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View Project ↗
-                      </a>
-                    ) : (
-                      <button className="button small placeholder" disabled>
-                        View Project — add URL
-                      </button>
-                    )}
+        <div className="project-track-shell">
+          <div
+            className="project-grid"
+            id="project-track"
+            ref={projectTrackRef}
+            tabIndex="0"
+            role="region"
+            aria-label="Project showcase"
+            onScroll={updateProjectNavigation}
+            onKeyDown={handleProjectTrackKeyDown}
+          >
+            {projects.map(
+              ([title, type, description, preview, liveDemo], index) => (
+                <article className="project-card" key={title}>
+                  <Preview kind={preview} title={title} />
+                  <div className="project-body">
+                    <p className="project-number">0{index + 1}</p>
+                    <h3>{title}</h3>
+                    <p className="project-type">{type}</p>
+                    <p className="project-description">{description}</p>
+                    <div className="card-actions">
+                      {liveDemo ? (
+                        <a
+                          className="button small primary"
+                          href={liveDemo}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View Project ↗
+                        </a>
+                      ) : (
+                        <button className="button small placeholder" disabled>
+                          View Project — add URL
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </article>
-            ),
-          )}
+                </article>
+              ),
+            )}
+          </div>
         </div>
       </section>
       <section
