@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import "./fixpro.css";
 import "./hero-animation.css";
@@ -238,8 +238,270 @@ function Preview({ kind, title }) {
   );
 }
 
+const PROJECT_TYPES = [
+  "Business Website",
+  "Web Application",
+  "Custom Business Tool",
+  "Booking / Scheduling System",
+  "Dashboard / Management System",
+  "Other",
+];
+
+const APPOINTMENT_STARTS = Array.from({ length: 30 }, (_, index) => 480 + index * 30);
+const manilaDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Manila",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const manilaConfirmationDateFormatter = new Intl.DateTimeFormat("en-PH", {
+  timeZone: "Asia/Manila",
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+const manilaTimeFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Manila",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+function getManilaDateString(date = new Date()) {
+  const parts = Object.fromEntries(
+    manilaDateFormatter
+      .formatToParts(date)
+      .filter(({ type }) => type !== "literal")
+      .map(({ type, value }) => [type, value]),
+  );
+
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+function addCalendarDays(dateString, days) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
+function formatAppointmentTime(minutes) {
+  const hour = Math.floor(minutes / 60);
+  const minute = String(minutes % 60).padStart(2, "0");
+  const period = hour < 12 ? "AM" : "PM";
+  return `${hour % 12 || 12}:${minute} ${period}`;
+}
+
+function makeManilaTimestamp(dateString, minutes) {
+  const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const minute = String(minutes % 60).padStart(2, "0");
+  return `${dateString}T${hour}:${minute}:00+08:00`;
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function getCurrentTime() {
+  return Date.now();
+}
+
+async function fetchBookedSlots(date, signal) {
+  const query = new URLSearchParams({ from: date, to: date });
+  const response = await fetch(`/api/booked-slots?${query}`, { signal });
+  if (!response.ok) throw new Error("Availability request failed");
+
+  const slots = await response.json();
+  if (!Array.isArray(slots)) throw new Error("Invalid availability response");
+  return slots.filter((slot) => slot && typeof slot.starts_at === "string");
+}
+
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [now, setNow] = useState(getCurrentTime);
+  const todayManila = getManilaDateString(new Date(now));
+  const lastBookableDate = addCalendarDays(todayManila, 29);
+  const [selectedDate, setSelectedDate] = useState(() => getManilaDateString());
+  const [selectedTime, setSelectedTime] = useState(null);
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+  const [availabilityError, setAvailabilityError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [successfulBooking, setSuccessfulBooking] = useState(null);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const currentTime = getCurrentTime();
+      const currentManilaDate = getManilaDateString(new Date(currentTime));
+      setNow(currentTime);
+      if (selectedDate < currentManilaDate) {
+        setSelectedDate(currentManilaDate);
+        setSelectedTime(null);
+        setIsAvailabilityLoading(true);
+      }
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!selectedDate || selectedDate < todayManila || selectedDate > lastBookableDate) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    fetchBookedSlots(selectedDate, controller.signal)
+      .then((slots) => {
+        setBookedSlots(slots);
+        setIsAvailabilityLoading(false);
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setAvailabilityError("We couldn't load times for this date. Please try another date.");
+          setIsAvailabilityLoading(false);
+        }
+      })
+
+    return () => controller.abort();
+  }, [selectedDate, todayManila, lastBookableDate]);
+
+  const appointmentSlots = selectedDate
+    ? APPOINTMENT_STARTS.map((minutes) => {
+        const startsAt = makeManilaTimestamp(selectedDate, minutes);
+        const startsAtMs = Date.parse(startsAt);
+        const isBooked = bookedSlots.some((slot) => Date.parse(slot.starts_at) === startsAtMs);
+        const isTooSoon = startsAtMs < now + 2 * 60 * 60 * 1000;
+
+        return {
+          minutes,
+          startsAt,
+          label: formatAppointmentTime(minutes),
+          isBooked,
+          isTooSoon,
+          disabled: isBooked || isTooSoon,
+        };
+      })
+    : [];
+  const availableSlotCount = appointmentSlots.filter((slot) => !slot.disabled).length;
+  const selectedSlot = appointmentSlots.find((slot) => slot.minutes === selectedTime);
+
+  async function refreshAvailability(date) {
+    setIsAvailabilityLoading(true);
+    setAvailabilityError("");
+    try {
+      const slots = await fetchBookedSlots(date);
+      setBookedSlots(slots);
+      return slots;
+    } catch {
+      setAvailabilityError("We couldn't load times for this date. Please try another date.");
+      return null;
+    } finally {
+      setIsAvailabilityLoading(false);
+    }
+  }
+
+  async function handleBookingSubmit(event) {
+    event.preventDefault();
+    setSubmitError("");
+    setSuccessfulBooking(null);
+
+    const formData = new FormData(event.currentTarget);
+    const name = String(formData.get("name") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim();
+    const projectType = String(formData.get("project_type") ?? "");
+    const description = String(formData.get("description") ?? "").trim();
+
+    if (name.length < 2 || name.length > 100) {
+      setSubmitError("Enter a name between 2 and 100 characters.");
+      return;
+    }
+    if (email.length > 254 || !isValidEmail(email)) {
+      setSubmitError("Enter a valid email address.");
+      return;
+    }
+    if (!PROJECT_TYPES.includes(projectType)) {
+      setSubmitError("Choose a project type.");
+      return;
+    }
+    if (description.length < 20 || description.length > 2000) {
+      setSubmitError("Enter a project description between 20 and 2000 characters.");
+      return;
+    }
+    if (!selectedDate || !selectedSlot) {
+      setSubmitError("Choose a date and available time.");
+      return;
+    }
+    if (selectedDate < todayManila || selectedDate > lastBookableDate) {
+      setSubmitError("Choose a date within the next 30 days.");
+      return;
+    }
+    const currentTime = getCurrentTime();
+    if (selectedSlot.disabled || Date.parse(selectedSlot.startsAt) < currentTime + 2 * 60 * 60 * 1000) {
+      setSelectedTime(null);
+      setSubmitError("That time no longer meets the two-hour notice. Please choose another time.");
+      return;
+    }
+
+    const payload = {
+      name,
+      email,
+      project_type: projectType,
+      description,
+      starts_at: selectedSlot.startsAt,
+    };
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const refreshedSlots = await refreshAvailability(selectedDate);
+        if (refreshedSlots) {
+          const selectedWasBooked = refreshedSlots.some(
+            (slot) => Date.parse(slot.starts_at) === Date.parse(selectedSlot.startsAt),
+          );
+          if (selectedWasBooked) {
+            setSelectedTime(null);
+            setSubmitError("That time was just taken. Please choose another available time.");
+            return;
+          }
+        }
+        setSubmitError("We couldn't complete your booking. Please try again.");
+        return;
+      }
+
+      setSuccessfulBooking({ date: selectedDate, startsAt: selectedSlot.startsAt });
+      setSelectedTime(null);
+      setBookedSlots((currentSlots) =>
+        currentSlots.some((slot) => Date.parse(slot.starts_at) === Date.parse(selectedSlot.startsAt))
+          ? currentSlots
+          : [...currentSlots, { starts_at: selectedSlot.startsAt }],
+      );
+
+      if (!await refreshAvailability(selectedDate)) {
+        setAvailabilityError("Your booking is confirmed, but availability couldn't be refreshed.");
+      }
+    } catch {
+      const refreshedSlots = await refreshAvailability(selectedDate);
+      if (refreshedSlots) {
+        const selectedWasBooked = refreshedSlots.some(
+          (slot) => Date.parse(slot.starts_at) === Date.parse(selectedSlot.startsAt),
+        );
+        if (selectedWasBooked) {
+          setSelectedTime(null);
+          setSubmitError("That time was just taken. Please choose another available time.");
+          return;
+        }
+      }
+      setSubmitError("We couldn't complete your booking. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <main>
@@ -616,10 +878,159 @@ function App() {
           idea into something real, I&apos;d be happy to hear about it.
         </p>
         <div className="contact-actions">
-          <a className="button primary" href="mailto:yourdgtalhub@gmail.com">
-            Start a Project <span>→</span>
+          <a className="button primary" href="#booking-form">
+            Book a Project Call <span>→</span>
           </a>
         </div>
+        <form
+          className="booking-form"
+          id="booking-form"
+          onSubmit={handleBookingSubmit}
+          aria-busy={isAvailabilityLoading || isSubmitting}
+        >
+          <div className="booking-fields">
+            <div className="booking-field">
+              <label htmlFor="booking-name">Name</label>
+              <input
+                autoComplete="name"
+                disabled={isSubmitting}
+                id="booking-name"
+                maxLength={100}
+                minLength={2}
+                name="name"
+                required
+                type="text"
+              />
+            </div>
+            <div className="booking-field">
+              <label htmlFor="booking-email">Email</label>
+              <input
+                autoComplete="email"
+                disabled={isSubmitting}
+                id="booking-email"
+                maxLength={254}
+                name="email"
+                required
+                type="email"
+              />
+            </div>
+            <div className="booking-field">
+              <label htmlFor="booking-project-type">Project Type</label>
+              <select
+                disabled={isSubmitting}
+                id="booking-project-type"
+                name="project_type"
+                required
+                defaultValue=""
+              >
+                <option disabled value="">Choose a project type</option>
+                {PROJECT_TYPES.map((projectType) => (
+                  <option key={projectType} value={projectType}>{projectType}</option>
+                ))}
+              </select>
+            </div>
+            <div className="booking-field booking-field-wide">
+              <label htmlFor="booking-description">Project Description</label>
+              <textarea
+                disabled={isSubmitting}
+                id="booking-description"
+                maxLength={2000}
+                minLength={20}
+                name="description"
+                required
+                rows={4}
+              />
+            </div>
+            <div className="booking-field">
+              <label htmlFor="booking-date">Date</label>
+              <input
+                disabled={isSubmitting}
+                id="booking-date"
+                max={lastBookableDate}
+                min={todayManila}
+                onChange={(event) => {
+                  const nextDate = event.target.value;
+                  setSelectedDate(nextDate);
+                  setSelectedTime(null);
+                  setBookedSlots([]);
+                  setIsAvailabilityLoading(Boolean(nextDate));
+                  setAvailabilityError("");
+                  setSubmitError("");
+                  setSuccessfulBooking(null);
+                }}
+                required
+                type="date"
+                value={selectedDate}
+              />
+              <span className="booking-field-hint">Dates use Manila time (UTC+08:00).</span>
+            </div>
+            <div className="booking-field booking-field-wide">
+              <fieldset
+                className="booking-time-fieldset"
+                disabled={isSubmitting || isAvailabilityLoading || Boolean(availabilityError)}
+              >
+                <legend>Available Time <span>Manila time</span></legend>
+                {appointmentSlots.length > 0 && (
+                  <div className="booking-time-grid">
+                    {appointmentSlots.map((slot) => {
+                      const unavailableReason = slot.isBooked
+                        ? ", already booked"
+                        : slot.isTooSoon
+                          ? ", within two-hour notice"
+                          : "";
+
+                      return (
+                        <button
+                          aria-label={`${slot.label}${unavailableReason}`}
+                          aria-pressed={selectedTime === slot.minutes}
+                          className={selectedTime === slot.minutes ? "is-selected" : ""}
+                          disabled={slot.disabled || isSubmitting || isAvailabilityLoading || Boolean(availabilityError)}
+                          key={slot.startsAt}
+                          onClick={() => {
+                            setSelectedTime(slot.minutes);
+                            setSubmitError("");
+                          }}
+                          type="button"
+                        >
+                          {slot.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </fieldset>
+            </div>
+          </div>
+
+          {isAvailabilityLoading && (
+            <p className="booking-message" role="status" aria-live="polite">
+              Loading available times…
+            </p>
+          )}
+          {!isAvailabilityLoading && availabilityError && (
+            <p className="booking-message is-error" role="alert">{availabilityError}</p>
+          )}
+          {!isAvailabilityLoading && !availabilityError && selectedDate && availableSlotCount === 0 && (
+            <p className="booking-message" role="status">
+              No available times for this date. Please choose another date.
+            </p>
+          )}
+          {!selectedDate && (
+            <p className="booking-message" role="status">Choose a date to see available times.</p>
+          )}
+          {submitError && <p className="booking-message is-error" role="alert">{submitError}</p>}
+          {successfulBooking && (
+            <p className="booking-message is-success" role="status" aria-live="polite">
+              Your call is booked for {manilaConfirmationDateFormatter.format(
+                new Date(successfulBooking.startsAt),
+              )} at {manilaTimeFormatter.format(new Date(successfulBooking.startsAt))} Manila time.
+            </p>
+          )}
+
+          <button className="button primary booking-submit" disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Submitting…" : "Request a Project Call"}
+          </button>
+        </form>
         <a className="contact-email" href="mailto:yourdgtalhub@gmail.com">
           yourdgtalhub@gmail.com <span>↗</span>
         </a>

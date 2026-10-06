@@ -127,6 +127,12 @@
   .v2-contact .button.primary { padding: 15px 18px; }
   .contact-email { max-width: 100%; margin-top: 24px; font-size: 0.66rem; }
   .contact-availability { gap: 8px; font-size: 0.5rem; letter-spacing: 0.11em; }
+  .v2-contact .booking-form { margin-top: 29px; padding-top: 23px; }
+  .booking-fields { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .booking-field-wide { grid-column: auto; }
+  .booking-time-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+  .booking-time-grid button { min-height: 40px; font-size: 0.67rem; }
+  .v2-contact .booking-submit { width: 100%; justify-content: center; }
 
   .v2-footer-main { gap: 33px; padding-top: 39px; padding-bottom: 33px; }
   .v2-footer nav { gap: 15px 19px; }
@@ -141,11 +147,13 @@
   .featured-project-visual .project-preview { min-height: 285px; }
   .v2-contact h2 { font-size: clamp(3rem, 13.3vw, 3.95rem); }
   .contact-email { font-size: 0.61rem; }
+  .booking-time-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero .button.primary,
   .v2-contact .button.primary,
+  .booking-time-grid button,
   .service-row,
   .service-row > span {
     transition: none;
