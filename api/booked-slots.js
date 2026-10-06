@@ -39,18 +39,7 @@ export default async function handler(req, res) {
         status,
       })),
     )
-  } catch (error) {
-    const message = typeof error?.message === 'string' ? error.message : ''
-    const containsSensitiveDetails =
-      /postgres(?:ql)?:\/\/|(?:DATABASE_URL|password|passwd|pwd)\s*[:=]|\b(?:SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP)\b|\b(?:host|user|username|dbname|database|port)\s*=\s*[^;\s]+/i.test(
-        message,
-      )
-
-    console.error({
-      name: error?.name,
-      code: error?.code,
-      message: containsSensitiveDetails ? '[redacted]' : message,
-    })
+  } catch {
     return res.status(500).json({ error: 'Unable to retrieve booked slots' })
   }
 }
