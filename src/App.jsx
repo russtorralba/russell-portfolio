@@ -11,6 +11,13 @@ import "./v2-responsive-polish.css";
 
 const projects = [
   [
+    "FlowDesk",
+    "Business Operations SaaS",
+    "A full business operations workspace for service teams—bringing customers, jobs, scheduling, invoicing, payments, analytics, and business settings into one responsive application.",
+    "flowdesk",
+    "https://flowdesk-three-tan.vercel.app",
+  ],
+  [
     "ChordHouse Music Academy",
     "Music lesson booking demo",
     "A welcoming lesson-booking experience designed to make finding the right music class feel simple.",
@@ -69,20 +76,24 @@ const projects = [
 
 const featuredProjects = [
   {
-    project: projects[6],
+    project: projects[0],
+    technologies: ["React", "Neon", "PostgreSQL", "Authentication", "SaaS"],
+  },
+  {
+    project: projects[7],
     technologies: ["React", "Vite", "Supabase", "Vercel"],
   },
   {
-    project: projects[0],
+    project: projects[1],
     technologies: ["Web Design", "Front-End", "Responsive"],
   },
   {
-    project: projects[5],
+    project: projects[6],
     technologies: ["Web Design", "Front-End", "Vercel"],
   },
 ];
 
-const experimentalProjects = [projects[1], projects[2], projects[3], projects[4]];
+const experimentalProjects = [projects[2], projects[3], projects[4], projects[5]];
 
 function Preview({ kind, title }) {
   const content = {
@@ -169,6 +180,20 @@ function Preview({ kind, title }) {
           <i>⌁</i>
           <i>✦</i>
           <i>●</i>
+        </div>
+      </>
+    ),
+    flowdesk: (
+      <>
+        <span className="preview-label">FLOWDESK</span>
+        <div className="flowdesk-window">
+          <div className="flowdesk-sidebar"><i /><i /><i /><i /><i /></div>
+          <div className="flowdesk-main">
+            <div className="flowdesk-topbar"><span>Dashboard</span><i /></div>
+            <p>Good morning</p>
+            <div className="flowdesk-metrics"><i /><i /><i /></div>
+            <div className="flowdesk-panel"><b>Today&apos;s work</b><span /><span /><span /></div>
+          </div>
         </div>
       </>
     ),
@@ -287,7 +312,7 @@ function App() {
           </div>
           <ul className="hero-capabilities" aria-label="Capabilities">
             <li>
-              <strong>7</strong>
+              <strong>8</strong>
               <span>Projects</span>
             </li>
             <li>
@@ -361,8 +386,8 @@ function App() {
           </div>
           <div className="v2-projects-summary">
             <p>
-              A selection of websites and digital experiences designed and built
-              with care.
+              A selection of websites and functional web applications designed
+              and built with care.
             </p>
           </div>
         </div>
@@ -372,7 +397,7 @@ function App() {
             const projectNumber = String(index + 1).padStart(2, "0");
             return (
               <article
-                className={`featured-project featured-project-${preview}`}
+                className={`featured-project featured-project-${preview}${preview === "flowdesk" ? " featured-project-flagship" : ""}`}
                 key={title}
               >
                 <div className="featured-project-visual">
@@ -380,6 +405,7 @@ function App() {
                 </div>
                 <div className="featured-project-copy">
                   <p className="featured-project-number">{projectNumber}</p>
+                  {preview === "flowdesk" && <p className="featured-project-flagship-label">Flagship project</p>}
                   <p className="featured-project-type">{type}</p>
                   <h3>{title}</h3>
                   <p className="featured-project-description">{description}</p>
