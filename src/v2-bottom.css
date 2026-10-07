@@ -212,6 +212,38 @@
   border-top: 1px solid rgba(184, 178, 255, 0.14);
 }
 
+.booking-verification {
+  width: min(690px, calc(100% - 40px));
+  margin: 24px auto;
+  padding: 20px;
+  border: 1px solid rgba(184, 178, 255, 0.24);
+  background: rgba(12, 14, 31, 0.9);
+  color: #f3f1fa;
+}
+
+.booking-verification h1 {
+  margin: 0;
+  color: #e1deed;
+  font: 600 1.15rem/1.4 "DM Sans", Arial, sans-serif;
+}
+
+.booking-verification p {
+  margin: 10px 0 0;
+  color: #b8b4c8;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.booking-verification .button {
+  margin-top: 16px;
+  cursor: pointer;
+}
+
+.booking-verification .button:focus-visible {
+  outline: 2px solid #b9afff;
+  outline-offset: 3px;
+}
+
 .booking-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

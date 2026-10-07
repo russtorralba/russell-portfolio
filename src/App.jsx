@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import "./fixpro.css";
 import "./hero-animation.css";
@@ -254,19 +254,6 @@ const manilaDateFormatter = new Intl.DateTimeFormat("en-CA", {
   month: "2-digit",
   day: "2-digit",
 });
-const manilaConfirmationDateFormatter = new Intl.DateTimeFormat("en-PH", {
-  timeZone: "Asia/Manila",
-  weekday: "long",
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
-const manilaTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  timeZone: "Asia/Manila",
-  hour: "numeric",
-  minute: "2-digit",
-});
-
 function getManilaDateString(date = new Date()) {
   const parts = Object.fromEntries(
     manilaDateFormatter
@@ -302,8 +289,26 @@ function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function isValidVerificationToken(value) {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{43}$/.test(value);
+}
+
 function getCurrentTime() {
   return Date.now();
+}
+
+function getInitialVerificationState() {
+  if (typeof window === "undefined") {
+    return { token: null, status: "none" };
+  }
+
+  const url = new URL(window.location.href);
+  const token = url.searchParams.get("verify") ??
+    new URLSearchParams(url.hash.slice(1)).get("verify");
+  if (token === null) return { token: null, status: "none" };
+  return isValidVerificationToken(token)
+    ? { token, status: "ready" }
+    : { token: null, status: "invalid" };
 }
 
 async function fetchBookedSlots(date, signal) {
@@ -329,6 +334,21 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [successfulBooking, setSuccessfulBooking] = useState(null);
+  const [initialVerification] = useState(getInitialVerificationState);
+  const [verificationToken, setVerificationToken] = useState(initialVerification.token);
+  const [verificationStatus, setVerificationStatus] = useState(initialVerification.status);
+  const bookingInFlightRef = useRef(false);
+  const verificationInFlightRef = useRef(false);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const hashParams = new URLSearchParams(url.hash.slice(1));
+    if (!url.searchParams.has("verify") && !hashParams.has("verify")) return;
+    url.searchParams.delete("verify");
+    hashParams.delete("verify");
+    url.hash = hashParams.toString();
+    window.history.replaceState(window.history.state, "", url);
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -400,8 +420,36 @@ function App() {
     }
   }
 
+  async function handleVerifyBooking() {
+    if (!verificationToken || verificationInFlightRef.current) return;
+    verificationInFlightRef.current = true;
+    setVerificationStatus("confirming");
+
+    try {
+      const response = await fetch("/api/verify-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: verificationToken }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error("Verification request failed");
+
+      if (!["verified", "expired", "invalid", "unavailable"].includes(result.outcome)) {
+        throw new Error("Unexpected verification response");
+      }
+
+      setVerificationStatus(result.outcome);
+      setVerificationToken(null);
+    } catch {
+      setVerificationStatus("error");
+    } finally {
+      verificationInFlightRef.current = false;
+    }
+  }
+
   async function handleBookingSubmit(event) {
     event.preventDefault();
+    if (bookingInFlightRef.current) return;
     setSubmitError("");
     setSuccessfulBooking(null);
 
@@ -449,6 +497,7 @@ function App() {
       description,
       starts_at: selectedSlot.startsAt,
     };
+    bookingInFlightRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -459,7 +508,13 @@ function App() {
       });
 
       if (!response.ok) {
+        const responseBody = await response.json().catch(() => ({}));
         const refreshedSlots = await refreshAvailability(selectedDate);
+        if (responseBody.code === "verification_email_failed") {
+          setSelectedTime(null);
+          setSubmitError("We couldn't send the verification email. Your time is held temporarily and will become available again after 15 minutes.");
+          return;
+        }
         if (refreshedSlots) {
           const selectedWasBooked = refreshedSlots.some(
             (slot) => Date.parse(slot.starts_at) === Date.parse(selectedSlot.startsAt),
@@ -474,7 +529,7 @@ function App() {
         return;
       }
 
-      setSuccessfulBooking({ date: selectedDate, startsAt: selectedSlot.startsAt });
+      setSuccessfulBooking(true);
       setSelectedTime(null);
       setBookedSlots((currentSlots) =>
         currentSlots.some((slot) => Date.parse(slot.starts_at) === Date.parse(selectedSlot.startsAt))
@@ -483,7 +538,7 @@ function App() {
       );
 
       if (!await refreshAvailability(selectedDate)) {
-        setAvailabilityError("Your booking is confirmed, but availability couldn't be refreshed.");
+        setAvailabilityError("Your verification email was sent, but availability couldn't be refreshed.");
       }
     } catch {
       const refreshedSlots = await refreshAvailability(selectedDate);
@@ -499,12 +554,60 @@ function App() {
       }
       setSubmitError("We couldn't complete your booking. Please try again.");
     } finally {
+      bookingInFlightRef.current = false;
       setIsSubmitting(false);
     }
   }
 
   return (
     <main>
+      {verificationStatus !== "none" && (
+        <section
+          aria-labelledby="booking-verification-title"
+          aria-live="polite"
+          className="booking-verification"
+          role="region"
+        >
+          <h1 id="booking-verification-title">Confirm your booking</h1>
+          {verificationStatus === "ready" && (
+            <>
+              <p>Confirm your booking to reserve your selected project call time.</p>
+              <button className="button primary" onClick={handleVerifyBooking} type="button">
+                Confirm Booking
+              </button>
+            </>
+          )}
+          {verificationStatus === "confirming" && <p>Confirming your booking…</p>}
+          {verificationStatus === "verified" && (
+            <p className="booking-message is-success">Your booking is verified and confirmed.</p>
+          )}
+          {verificationStatus === "expired" && (
+            <p className="booking-message is-error">
+              This verification link expired. The temporary hold has been released. Please choose another time.
+            </p>
+          )}
+          {verificationStatus === "invalid" && (
+            <p className="booking-message is-error">
+              This verification link is invalid or has already been used.
+            </p>
+          )}
+          {verificationStatus === "unavailable" && (
+            <p className="booking-message is-error">
+              This time is no longer available. Please submit a new booking request.
+            </p>
+          )}
+          {verificationStatus === "error" && (
+            <>
+              <p className="booking-message is-error">We couldn't verify your booking right now. Please try again.</p>
+              {verificationToken && (
+                <button className="button primary" onClick={handleVerifyBooking} type="button">
+                  Try Again
+                </button>
+              )}
+            </>
+          )}
+        </section>
+      )}
       <header className="site-header">
         <a className="site-wordmark" href="#top" aria-label="Russell Torralba home">
           RUSSELL <span>TORRALBA</span>
@@ -1012,9 +1115,7 @@ function App() {
           {submitError && <p className="booking-message is-error" role="alert">{submitError}</p>}
           {successfulBooking && (
             <p className="booking-message is-success" role="status" aria-live="polite">
-              Your call is booked for {manilaConfirmationDateFormatter.format(
-                new Date(successfulBooking.startsAt),
-              )} at {manilaTimeFormatter.format(new Date(successfulBooking.startsAt))} Manila time.
+              Check your email to verify your booking. Your selected time is held for 15 minutes.
             </p>
           )}
 
