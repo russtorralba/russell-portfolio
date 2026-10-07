@@ -965,40 +965,31 @@ function App() {
               <span className="booking-field-hint">Dates use Manila time (UTC+08:00).</span>
             </div>
             <div className="booking-field booking-field-wide">
-              <fieldset
-                className="booking-time-fieldset"
-                disabled={isSubmitting || isAvailabilityLoading || Boolean(availabilityError)}
+              <label htmlFor="booking-time">
+                Available Time <span className="booking-field-hint">Manila time</span>
+              </label>
+              <select
+                disabled={
+                  isSubmitting ||
+                  isAvailabilityLoading ||
+                  Boolean(availabilityError) ||
+                  !selectedDate ||
+                  availableSlotCount === 0
+                }
+                id="booking-time"
+                onChange={(event) => {
+                  setSelectedTime(event.target.value ? Number(event.target.value) : null);
+                  setSubmitError("");
+                }}
+                value={selectedTime ?? ""}
               >
-                <legend>Available Time <span>Manila time</span></legend>
-                {appointmentSlots.length > 0 && (
-                  <div className="booking-time-grid">
-                    {appointmentSlots.map((slot) => {
-                      const unavailableReason = slot.isBooked
-                        ? ", already booked"
-                        : slot.isTooSoon
-                          ? ", within two-hour notice"
-                          : "";
-
-                      return (
-                        <button
-                          aria-label={`${slot.label}${unavailableReason}`}
-                          aria-pressed={selectedTime === slot.minutes}
-                          className={selectedTime === slot.minutes ? "is-selected" : ""}
-                          disabled={slot.disabled || isSubmitting || isAvailabilityLoading || Boolean(availabilityError)}
-                          key={slot.startsAt}
-                          onClick={() => {
-                            setSelectedTime(slot.minutes);
-                            setSubmitError("");
-                          }}
-                          type="button"
-                        >
-                          {slot.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </fieldset>
+                <option disabled value="">Select an available time</option>
+                {appointmentSlots
+                  .filter((slot) => !slot.disabled)
+                  .map((slot) => (
+                    <option key={slot.startsAt} value={slot.minutes}>{slot.label}</option>
+                  ))}
+              </select>
             </div>
           </div>
 
@@ -1012,7 +1003,7 @@ function App() {
           )}
           {!isAvailabilityLoading && !availabilityError && selectedDate && availableSlotCount === 0 && (
             <p className="booking-message" role="status">
-              No available times for this date. Please choose another date.
+              No available times for this date.
             </p>
           )}
           {!selectedDate && (

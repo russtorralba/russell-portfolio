@@ -226,8 +226,7 @@
 
 .booking-field-wide { grid-column: 1 / -1; }
 
-.booking-field > label,
-.booking-time-fieldset legend {
+.booking-field > label {
   color: #e1deed;
   font: 600 0.72rem/1.35 "DM Sans", Arial, sans-serif;
 }
@@ -259,7 +258,6 @@
 .booking-field input:focus-visible,
 .booking-field select:focus-visible,
 .booking-field textarea:focus-visible,
-.booking-time-grid button:focus-visible,
 .booking-submit:focus-visible {
   border-color: #b9afff;
   outline: 2px solid #b9afff;
@@ -270,63 +268,9 @@
 .booking-field select:disabled,
 .booking-field textarea:disabled { opacity: 0.66; }
 
-.booking-field-hint,
-.booking-time-fieldset legend span {
+.booking-field-hint {
   color: #a6a2b6;
   font: 400 0.66rem/1.5 "DM Sans", Arial, sans-serif;
-}
-
-.booking-time-fieldset {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.booking-time-fieldset legend { margin-bottom: 12px; }
-.booking-time-fieldset legend span { margin-left: 7px; }
-
-.booking-time-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.booking-time-grid button {
-  min-width: 0;
-  min-height: 42px;
-  padding: 8px 5px;
-  border: 1px solid rgba(190, 180, 255, 0.25);
-  border-radius: 2px;
-  background: rgba(17, 18, 38, 0.72);
-  color: #d8d5e5;
-  cursor: pointer;
-  font: 600 0.7rem/1.2 "DM Sans", Arial, sans-serif;
-  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
-}
-
-.booking-time-grid button:hover:not(:disabled) {
-  border-color: #b9afff;
-  color: #fff;
-}
-
-.booking-time-grid button.is-selected {
-  border-color: #b9afff;
-  background: #9e91ff;
-  color: #121026;
-}
-
-.booking-time-grid button:disabled {
-  border-color: rgba(190, 180, 255, 0.1);
-  background: rgba(10, 11, 25, 0.42);
-  color: #777487;
-  cursor: not-allowed;
-}
-
-.booking-time-grid button.is-selected:disabled {
-  border-color: #b9afff;
-  background: #9e91ff;
-  color: #121026;
 }
 
 .booking-message {
