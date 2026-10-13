@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import soniqPreview from "./assets/soniq-aura-x1-preview.png";
+import soniqHeadphones from "./assets/soniq-aura-x1-headphones.png";
 import "./App.css";
 import "./fixpro.css";
 import "./hero-animation.css";
@@ -16,6 +18,13 @@ const projects = [
     "A full business operations workspace for service teams—bringing customers, jobs, scheduling, invoicing, payments, analytics, and business settings into one responsive application.",
     "flowdesk",
     "https://flowdesk-three-tan.vercel.app",
+  ],
+  [
+    "SONIQ AURA X1",
+    "Interactive product landing page",
+    "An AI-assisted product experience pairing cinematic GSAP motion, finish exploration, and an animated Sound Portal. Login and sign-up transitions are frontend demos only — not real authentication.",
+    "soniq",
+    "https://soniq-aura-x1.vercel.app/",
   ],
   [
     "ChordHouse Music Academy",
@@ -80,20 +89,24 @@ const featuredProjects = [
     technologies: ["React", "Neon", "PostgreSQL", "Authentication", "SaaS"],
   },
   {
-    project: projects[7],
+    project: projects[1],
+    technologies: ["React", "JavaScript / TypeScript", "Vite", "GSAP", "CSS", "Vercel"],
+  },
+  {
+    project: projects[8],
     technologies: ["React", "Vite", "Supabase", "Vercel"],
   },
   {
-    project: projects[1],
+    project: projects[2],
     technologies: ["Web Design", "Front-End", "Responsive"],
   },
   {
-    project: projects[6],
+    project: projects[7],
     technologies: ["Web Design", "Front-End", "Vercel"],
   },
 ];
 
-const experimentalProjects = [projects[2], projects[3], projects[4], projects[5]];
+const experimentalProjects = [projects[3], projects[4], projects[5], projects[6]];
 
 function Preview({ kind, title }) {
   const content = {
@@ -195,6 +208,17 @@ function Preview({ kind, title }) {
             <div className="flowdesk-panel"><b>Today&apos;s work</b><span /><span /><span /></div>
           </div>
         </div>
+      </>
+    ),
+    soniq: (
+      <>
+        <img className="soniq-preview-shot" src={soniqPreview} alt="" />
+        <span className="soniq-preview-shade" />
+        <img className="soniq-headphones" src={soniqHeadphones} alt="" />
+        <span className="soniq-preview-kicker">SONIQ / AURA X1</span>
+        <span className="soniq-preview-spec">40MM PLANAR DRIVERS</span>
+        <span className="soniq-finish-label">SELECT FINISH</span>
+        <span className="soniq-finishes" aria-hidden="true"><i /><i /><i /></span>
       </>
     ),
     carepoint: (
@@ -677,7 +701,7 @@ function App() {
           </div>
           <ul className="hero-capabilities" aria-label="Capabilities">
             <li>
-              <strong>8</strong>
+              <strong>9</strong>
               <span>Projects</span>
             </li>
             <li>
@@ -785,7 +809,7 @@ function App() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    View Project <span>→</span>
+                    {preview === "soniq" ? "View Live Project" : "View Project"} <span>→</span>
                   </a>
                 </div>
               </article>
@@ -802,7 +826,7 @@ function App() {
               <article className="experiment-project" key={title}>
                 <Preview kind={preview} title={title} />
                 <div className="experiment-project-copy">
-                  <p>0{index + 4}</p>
+                  <p>{String(index + 6).padStart(2, "0")}</p>
                   <h4>{title}</h4>
                   <span>{type}</span>
                   <p className="experiment-description">{description}</p>
