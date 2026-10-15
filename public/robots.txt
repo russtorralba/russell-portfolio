@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://russell-portfolio-l6yh.vercel.app/sitemap.xml
