@@ -346,6 +346,7 @@ async function fetchBookedSlots(date, signal) {
 }
 
 function App() {
+  const [isClient, setIsClient] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [now, setNow] = useState(getCurrentTime);
   const todayManila = getManilaDateString(new Date(now));
@@ -365,6 +366,11 @@ function App() {
   const verificationInFlightRef = useRef(false);
 
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setIsClient(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     const url = new URL(window.location.href);
     const hashParams = new URLSearchParams(url.hash.slice(1));
     if (!url.searchParams.has("verify") && !hashParams.has("verify")) return;
@@ -375,6 +381,8 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!isClient) return undefined;
+
     const timer = window.setInterval(() => {
       const currentTime = getCurrentTime();
       const currentManilaDate = getManilaDateString(new Date(currentTime));
@@ -386,10 +394,10 @@ function App() {
       }
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [selectedDate]);
+  }, [isClient, selectedDate]);
 
   useEffect(() => {
-    if (!selectedDate || selectedDate < todayManila || selectedDate > lastBookableDate) {
+    if (!isClient || !selectedDate || selectedDate < todayManila || selectedDate > lastBookableDate) {
       return undefined;
     }
 
@@ -407,7 +415,7 @@ function App() {
       })
 
     return () => controller.abort();
-  }, [selectedDate, todayManila, lastBookableDate]);
+  }, [isClient, selectedDate, todayManila, lastBookableDate]);
 
   const appointmentSlots = selectedDate
     ? APPOINTMENT_STARTS.map((minutes) => {
@@ -585,7 +593,7 @@ function App() {
 
   return (
     <main>
-      {verificationStatus !== "none" && (
+      {isClient && verificationStatus !== "none" && (
         <section
           aria-labelledby="booking-verification-title"
           aria-live="polite"
@@ -1013,7 +1021,7 @@ function App() {
           className="booking-form"
           id="booking-form"
           onSubmit={handleBookingSubmit}
-          aria-busy={isAvailabilityLoading || isSubmitting}
+          aria-busy={isClient && (isAvailabilityLoading || isSubmitting)}
         >
           <div className="booking-fields">
             <div className="booking-field">
@@ -1073,8 +1081,8 @@ function App() {
               <input
                 disabled={isSubmitting}
                 id="booking-date"
-                max={lastBookableDate}
-                min={todayManila}
+                max={isClient ? lastBookableDate : undefined}
+                min={isClient ? todayManila : undefined}
                 onChange={(event) => {
                   const nextDate = event.target.value;
                   setSelectedDate(nextDate);
@@ -1087,7 +1095,7 @@ function App() {
                 }}
                 required
                 type="date"
-                value={selectedDate}
+                value={isClient ? selectedDate : ""}
               />
               <span className="booking-field-hint">Dates use Manila time (UTC+08:00).</span>
             </div>
@@ -1111,7 +1119,7 @@ function App() {
                 value={selectedTime ?? ""}
               >
                 <option disabled value="">Select an available time</option>
-                {appointmentSlots
+                {(isClient ? appointmentSlots : [])
                   .filter((slot) => !slot.disabled)
                   .map((slot) => (
                     <option key={slot.startsAt} value={slot.minutes}>{slot.label}</option>
@@ -1120,24 +1128,24 @@ function App() {
             </div>
           </div>
 
-          {isAvailabilityLoading && (
+          {isClient && isAvailabilityLoading && (
             <p className="booking-message" role="status" aria-live="polite">
               Loading available times…
             </p>
           )}
-          {!isAvailabilityLoading && availabilityError && (
+          {isClient && !isAvailabilityLoading && availabilityError && (
             <p className="booking-message is-error" role="alert">{availabilityError}</p>
           )}
-          {!isAvailabilityLoading && !availabilityError && selectedDate && availableSlotCount === 0 && (
+          {isClient && !isAvailabilityLoading && !availabilityError && selectedDate && availableSlotCount === 0 && (
             <p className="booking-message" role="status">
               No available times for this date.
             </p>
           )}
-          {!selectedDate && (
+          {isClient && !selectedDate && (
             <p className="booking-message" role="status">Choose a date to see available times.</p>
           )}
-          {submitError && <p className="booking-message is-error" role="alert">{submitError}</p>}
-          {successfulBooking && (
+          {isClient && submitError && <p className="booking-message is-error" role="alert">{submitError}</p>}
+          {isClient && successfulBooking && (
             <p className="booking-message is-success" role="status" aria-live="polite">
               Check your email to verify your booking. Your selected time is held for 15 minutes.
             </p>
